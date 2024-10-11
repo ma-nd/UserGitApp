@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.userrepo.R
+import com.example.userrepo.ui.component.TextFieldPlaceholderView
 
 @Composable
 fun LoginScreen(viewModel: LoginViewModel, onSaveClick: () -> Unit) {
@@ -46,6 +47,7 @@ private fun LoginLayout(
                 actionHandler.onUserNameChanged(it)
             },
             singleLine = true,
+            placeholder = { TextFieldPlaceholderView(R.string.login_name_placeholder) },
         )
 
         TextField(
@@ -55,6 +57,7 @@ private fun LoginLayout(
                 actionHandler.onTokenChanged(it)
             },
             singleLine = true,
+            placeholder = { TextFieldPlaceholderView(R.string.login_token_placeholder) },
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -79,5 +82,10 @@ private fun LoginLayout(
 @PreviewLightDark
 @Composable
 private fun PreviewLoginLayout() {
-
+    LoginLayout(state = LoginViewModel.State(
+        userName = "User name",
+        token = "abc",
+        isButtonEnabled = true
+    ),
+        actionHandler = object : LoginViewModelActionHandler {}, onSaveClick = {})
 }
