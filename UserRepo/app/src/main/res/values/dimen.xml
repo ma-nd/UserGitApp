@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="common_padding_16">16dp</dimen>
+
+    <dimen name="card_elevation">6dp</dimen>
+    <dimen name="user_avatar">42dp</dimen>
+</resources>

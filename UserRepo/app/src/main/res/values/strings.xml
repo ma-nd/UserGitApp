@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">UserRepo</string>
+    <string name="error">Error</string>
+    <string name="followers">Followers</string>
+    <string name="followings">Followings</string>
+    <string name="long_in">Log in</string>
+    <string name="long_out">Log out</string>
+    <string name="save_message">Remember credentials</string>
+    <string name="login_error_message">Please log in</string>
+    <string name="common_error_message">Error occurred, please try again</string>
+</resources>
