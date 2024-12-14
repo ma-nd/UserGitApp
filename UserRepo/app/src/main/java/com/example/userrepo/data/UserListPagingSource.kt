@@ -2,7 +2,6 @@ package com.example.userrepo.data
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import com.example.userrepo.base.data.Response
 import com.example.userrepo.data.models.UserDetailsModel
 
 class UserListPagingSource(private val query: String, private val github: GithubRepository) :
@@ -18,20 +17,21 @@ class UserListPagingSource(private val query: String, private val github: Github
                     pageSize = params.loadSize
                 )
             } else {
-                Response.Success(emptyList())
+                Result.success(emptyList())
             }
 
-            when (usersResult) {
-                is Response.Success -> {
+            when {
+                usersResult.isSuccess -> {
+                    val data = usersResult.getOrThrow()
                     LoadResult.Page(
-                        data = usersResult.data,
+                        data = data,
                         prevKey = if (currentPage == 1) null else currentPage - 1,
-                        nextKey = if (usersResult.data.isEmpty()) null else currentPage + 1
+                        nextKey = if (data.isEmpty()) null else currentPage + 1
                     )
                 }
 
-                is Response.Error -> {
-                    LoadResult.Error(usersResult.exception)
+                else -> {
+                    LoadResult.Error(usersResult.exceptionOrNull() ?: Error())
                 }
             }
         } catch (exception: Exception) {

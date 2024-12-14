@@ -2,7 +2,6 @@ package com.example.userrepo.base.ui
 
 import androidx.lifecycle.ViewModel
 import com.example.userrepo.base.data.Event
-import com.example.userrepo.base.data.Response
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -13,7 +12,7 @@ open class BaseViewModel<T>(initialState: T) : ViewModel() {
     private val _commonState = MutableStateFlow(CommonState())
     val commonState: StateFlow<CommonState> by lazy { _commonState }
 
-    fun onError(error: Response.Error) {
+    fun onError(error: Throwable) {
         _commonState.value = _commonState.value.copy(error = Event(error))
     }
 
@@ -22,7 +21,7 @@ open class BaseViewModel<T>(initialState: T) : ViewModel() {
     }
 
     data class CommonState(
-        val error: Event<Response.Error>? = null,
+        val error: Event<Throwable>? = null,
         val closeScreen: Event<Unit>? = null
     )
 }

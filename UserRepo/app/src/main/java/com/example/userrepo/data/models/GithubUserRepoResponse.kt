@@ -21,11 +21,17 @@ data class GithubUserRepoResponse(
     @SerializedName("html_url")
     val htmlUrl: String?,
 ) {
-    fun toUserRepoModel() = UserRepoModel(
+
+    fun toUserRepoModel(maxStarsToShow: Int = 10) = UserRepoModel(
         name = name ?: "",
         description = description ?: "",
         languages = language.toString(),
-        starsCount = stargazersCount ?: 0,
+        starsToShowCount = if ((stargazersCount ?: 0) > maxStarsToShow) {
+            maxStarsToShow
+        } else {
+            stargazersCount ?: 0
+        },
+        starsToAdd = stargazersCount?.let { (it - maxStarsToShow).takeIf { it > 0 } } ?: 0,
         url = htmlUrl ?: "",
     )
 }

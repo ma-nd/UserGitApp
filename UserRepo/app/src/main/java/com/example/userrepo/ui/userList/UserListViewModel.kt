@@ -5,7 +5,6 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import com.example.userrepo.base.data.Response
 import com.example.userrepo.base.ui.BaseViewModel
 import com.example.userrepo.data.AuthManager
 import com.example.userrepo.data.GithubRepository
@@ -41,7 +40,7 @@ class UserListViewModel(
     }
 
     override fun onListError(error: Throwable) {
-        onError(Response.Error(error))
+        onError(error)
     }
 
     override fun onQueryChanged(query: String) {

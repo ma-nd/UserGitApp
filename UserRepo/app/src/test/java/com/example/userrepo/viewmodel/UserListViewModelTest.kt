@@ -1,7 +1,7 @@
 package com.example.userrepo.viewmodel
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.example.userrepo.base.data.Response
+import androidx.paging.testing.asSnapshot
 import com.example.userrepo.data.AuthManager
 import com.example.userrepo.data.GithubRepository
 import com.example.userrepo.data.models.UserDetailsModel
@@ -16,7 +16,9 @@ import io.mockk.unmockkAll
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -54,7 +56,7 @@ class UserListViewModelTest {
 
     @Test
     fun onLogOutClick() = runTest {
-        coEvery { githubRepository.getUserDetails(testName) } returns Response.Success(userModel)
+        coEvery { githubRepository.getUserDetails(testName) } returns Result.success(userModel)
         every { authManager.logOut() } just runs
         every { authManager.isUserAuthorize() } returns true
         val viewModel = UserListViewModel(
@@ -80,7 +82,7 @@ class UserListViewModelTest {
 
         viewModel.onListError(error)
         viewModel.commonState.value.error?.handle {
-            assertEquals(error, it.exception)
+            assertEquals(error, it)
         }
     }
 
@@ -109,5 +111,31 @@ class UserListViewModelTest {
 
         viewModel.onRefresh()
         assertTrue(viewModel.uiState.value.isUserLogIn)
+    }
+
+    @Test
+    fun getUserList() = runTest {
+        val testQuery = "test query"
+        val userItem = mockk<UserDetailsModel>(relaxed = true)
+        coEvery { githubRepository.getUserList(testQuery, any(), any()) } returns Result.success(
+            listOf(
+                userItem
+            )
+        )
+
+        val viewModel = UserListViewModel(
+            authManager = authManager,
+            githubRepository = githubRepository
+        )
+        viewModel.onQueryChanged(testQuery)
+
+        val list = mutableListOf<UserDetailsModel>()
+        val job = launch(StandardTestDispatcher()) {
+            viewModel.getUserList().asSnapshot().toCollection(list)
+        }
+        advanceUntilIdle()
+        coVerify { githubRepository.getUserList(testQuery, any(), any()) }
+        assertEquals(list.first(), userItem)
+        job.cancel()
     }
 }

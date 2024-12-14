@@ -7,8 +7,12 @@
     <string name="long_out">Log out</string>
     <string name="save_message">Remember credentials</string>
     <string name="login_error_message">Please log in</string>
+    <string name="auth_error_message">Wrong credentials,\nplease log in again</string>
     <string name="common_error_message">Error occurred, please try again</string>
     <string name="search_placeholder">Search user name</string>
     <string name="login_name_placeholder">User name</string>
     <string name="login_token_placeholder">User token</string>
+    <string name="tab_repository">Repository</string>
+    <string name="tab_activity">Activity</string>
+    <string name="no_results_info">No results</string>
 </resources>

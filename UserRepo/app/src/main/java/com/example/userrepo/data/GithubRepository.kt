@@ -1,6 +1,5 @@
 package com.example.userrepo.data
 
-import com.example.userrepo.base.data.Response
 import com.example.userrepo.data.api.GithubApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,9 +14,9 @@ class GithubRepository(private val githubApi: GithubApi) {
                 pageSize = pageSize,
             ).items.map { it.toUserDetailsModel() }
 
-            Response.Success(response)
+            Result.success(response)
         } catch (e: Exception) {
-            Response.Error(e)
+            Result.failure(e)
         }
     }
 
@@ -27,9 +26,21 @@ class GithubRepository(private val githubApi: GithubApi) {
                 username = userName
             ).toUserDetailsModel()
 
-            Response.Success(response)
+            Result.success(response)
         } catch (e: Exception) {
-            Response.Error(e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getUserActivities(userName: String) = withContext(Dispatchers.IO) {
+        try {
+            val response = githubApi.getUserActivities(
+                username = userName
+            ).map { it.toUserActivityModel() }
+
+            Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
@@ -51,9 +62,9 @@ class GithubRepository(private val githubApi: GithubApi) {
                 response
             }
 
-            Response.Success(filteredResponse.map { it.toUserRepoModel() })
+            Result.success(filteredResponse.map { it.toUserRepoModel() })
         } catch (e: Exception) {
-            Response.Error(e)
+            Result.failure(e)
         }
     }
 }

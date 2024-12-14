@@ -5,19 +5,28 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
@@ -27,10 +36,13 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.userrepo.R
 import com.example.userrepo.base.ui.theme.UserRepoTheme
+import com.example.userrepo.data.models.UserActivityModel
 import com.example.userrepo.data.models.UserDetailsModel
 import com.example.userrepo.data.models.UserRepoModel
+import com.example.userrepo.ui.component.EmptyListView
 import com.example.userrepo.ui.component.UserItemView
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 
 @Composable
@@ -40,6 +52,7 @@ fun UserDetailsScreen(viewModel: UserDetailsViewModel, onRepoClick: (String) -> 
 
     UserDetailsLayout(
         repoList = userList,
+        activityList = state.userActivities,
         user = state.userDetails,
         actionHandler = viewModel,
         onRepoClick = onRepoClick,
@@ -49,6 +62,7 @@ fun UserDetailsScreen(viewModel: UserDetailsViewModel, onRepoClick: (String) -> 
 @Composable
 private fun UserDetailsLayout(
     repoList: LazyPagingItems<UserRepoModel>,
+    activityList: List<UserActivityModel>,
     user: UserDetailsModel?,
     actionHandler: UserDetailsViewModelActionHandler,
     onRepoClick: (String) -> Unit,
@@ -65,26 +79,95 @@ private fun UserDetailsLayout(
             if (repoList.loadState.refresh is LoadState.Error) {
                 actionHandler.onListError((repoList.loadState.refresh as LoadState.Error).error)
             }
-            LazyColumn() {
-                items(repoList.itemCount) { index ->
-                    repoList[index]?.let {
-                        RepoItem(it, onClick = { url ->
-                            onRepoClick(url)
-                        })
+            val tabData = listOf(
+                stringResource(id = R.string.tab_repository),
+                stringResource(id = R.string.tab_activity),
+            )
+            val repoListState = rememberLazyListState()
+            val activityListState = rememberLazyListState()
+            val coroutineScope = rememberCoroutineScope()
 
-                        if (index != repoList.itemCount - 1) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(
-                                    vertical = dimensionResource(
-                                        id = R.dimen.common_padding_16
-                                    )
+            val pagerState = rememberPagerState() { tabData.size }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize(),
+                content = {
+                    TabRow(
+                        selectedTabIndex = pagerState.currentPage,
+                        tabs = {
+                            tabData.forEachIndexed { index, title ->
+                                Tab(
+                                    text = { Text(title) },
+                                    selected = pagerState.currentPage == index,
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(index)
+                                        }
+                                    },
                                 )
-                            )
+                            }
+                        }
+                    )
+
+                    HorizontalPager(
+                        modifier = Modifier.fillMaxSize(),
+                        state = pagerState,
+                    ) { tabId ->
+                        when (tabId) {
+                            0 ->
+                                LazyColumn(state = repoListState) {
+                                    items(repoList.itemCount) { index ->
+                                        repoList[index]?.let {
+                                            RepoItem(it, onClick = { url ->
+                                                onRepoClick(url)
+                                            })
+
+                                            if (index != repoList.itemCount - 1) {
+                                                HorizontalDivider(
+                                                    modifier = Modifier.padding(
+                                                        vertical = dimensionResource(
+                                                            id = R.dimen.common_padding_16
+                                                        )
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    }
+                                    item {
+                                        if (repoList.loadState.refresh is LoadState.NotLoading &&
+                                            repoList.itemCount == 0
+                                        ) EmptyListView()
+                                    }
+                                }
+
+                            1 ->
+                                LazyColumn(state = activityListState) {
+                                    items(activityList.count()) { index ->
+                                        ActivityItem(activityList[index], onClick = { url ->
+                                            onRepoClick(url)
+                                        })
+
+                                        if (index != activityList.count() - 1) {
+                                            HorizontalDivider(
+                                                modifier = Modifier.padding(
+                                                    vertical = dimensionResource(
+                                                        id = R.dimen.common_padding_16
+                                                    )
+                                                )
+                                            )
+                                        }
+                                    }
+
+                                    item {
+                                        if (activityList.isEmpty()) EmptyListView()
+                                    }
+                                }
                         }
                     }
                 }
-            }
+            )
         }
+
     }
 }
 
@@ -109,42 +192,89 @@ private fun FollowerItem(followers: Int, followings: Int) {
 
 @Composable
 private fun RepoItem(item: UserRepoModel, onClick: (String) -> Unit) {
-    Column(modifier = Modifier.clickable { onClick(item.url) }) {
-        Text(
-            text = item.name,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.common_padding_16))
-        )
-        Row {
-            Spacer(modifier = Modifier.weight(1f))
-            val painter = painterResource(id = R.drawable.ic_star_rate)
-            repeat(item.starToShowCount) {
-                Icon(
-                    painter = painter,
-                    contentDescription = "Stars",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick(item.url) },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = item.name,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.common_padding_16))
+            )
+            Row {
+                Spacer(modifier = Modifier.weight(1f))
+                val painter = painterResource(id = R.drawable.ic_star_rate)
+                repeat(item.starsToShowCount) {
+                    Icon(
+                        painter = painter,
+                        contentDescription = "Stars",
+                        tint = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+                if (item.starsToAdd > 0) {
+                    Text(
+                        text = "+${item.starsToAdd}",
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.common_padding_16))
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
             }
-            if (item.starToAdd > 0) {
-                Text(
-                    text = "+${item.starToAdd}",
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.common_padding_16))
-                )
-            }
-            Spacer(modifier = Modifier.weight(1f))
+
+            Text(
+                text = item.description,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.common_padding_16))
+            )
+            Text(
+                text = item.languages,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.common_padding_16))
+            )
         }
 
-        Text(
-            text = item.description,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.common_padding_16))
+        Icon(
+            painter = painterResource(id = R.drawable.ic_arrow_right),
+            contentDescription = "Navigate",
+            tint = MaterialTheme.colorScheme.primary
         )
-        Text(
-            text = item.languages,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.common_padding_16))
-        )
+    }
+}
+
+@Composable
+private fun ActivityItem(item: UserActivityModel, onClick: (String) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = dimensionResource(id = R.dimen.common_padding_16))
+            .clickable(enabled = item.url.isNotBlank(), onClick = { onClick(item.url) }),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = item.repoName,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = dimensionResource(id = R.dimen.common_padding_16))
+            )
+
+            Text(
+                text = item.activityType + ((": ${item.actionType}").takeIf { item.actionType.isNotBlank() }
+                    ?: ""),
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = dimensionResource(id = R.dimen.common_padding_16))
+            )
+        }
+        if (item.url.isNotBlank()) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_arrow_right),
+                contentDescription = "Navigate",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
     }
 }
 
@@ -159,7 +289,8 @@ private fun PreviewUserItem() {
                         UserRepoModel(
                             name = "Name",
                             languages = "Java",
-                            starsCount = 5,
+                            starsToShowCount = 10,
+                            starsToAdd = 5,
                             description = "Description",
                             url = "",
                         )
@@ -179,6 +310,14 @@ private fun PreviewUserItem() {
                 followingCount = 0,
                 login = "User Login",
                 name = "User Name",
+            ),
+            activityList = listOf(
+                UserActivityModel(
+                    activityType = "Activity",
+                    actionType = "Action",
+                    repoName = "Repo",
+                    url = ""
+                )
             ),
             actionHandler = object : UserDetailsViewModelActionHandler {},
         )

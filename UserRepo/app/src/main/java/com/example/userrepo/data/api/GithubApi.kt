@@ -1,5 +1,6 @@
 package com.example.userrepo.data.api
 
+import com.example.userrepo.data.models.GithubUserActivityResponse
 import com.example.userrepo.data.models.GithubUserDetailsResponse
 import com.example.userrepo.data.models.GithubUserRepoResponse
 import com.example.userrepo.data.models.GithubUsersResponse
@@ -27,4 +28,9 @@ interface GithubApi {
         @Query("page") page: Int,
         @Query("per_page") pageSize: Int
     ): List<GithubUserRepoResponse>
+
+    @GET("users/{username}/events")
+    suspend fun getUserActivities(
+        @Path("username") username: String,
+    ): List<GithubUserActivityResponse>
 }

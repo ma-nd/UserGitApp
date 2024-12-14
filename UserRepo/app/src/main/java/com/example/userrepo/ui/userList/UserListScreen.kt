@@ -27,6 +27,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.userrepo.R
 import com.example.userrepo.base.ui.theme.UserRepoTheme
 import com.example.userrepo.data.models.UserDetailsModel
+import com.example.userrepo.ui.component.EmptyListView
 import com.example.userrepo.ui.component.TextFieldPlaceholderView
 import com.example.userrepo.ui.component.UserItemView
 import kotlinx.coroutines.flow.flowOf
@@ -120,6 +121,12 @@ private fun UserListLayout(
                             )
                         )
                     }
+                }
+            }
+
+            item {
+                if (userList.loadState.refresh is LoadState.NotLoading && listSize == 0) {
+                    EmptyListView()
                 }
             }
         }

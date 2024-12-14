@@ -7,9 +7,13 @@ import androidx.navigation.NavController
 import com.example.userrepo.R
 import com.example.userrepo.base.data.ErrorType
 import com.example.userrepo.base.navigation.NavigationItem
+import com.example.userrepo.data.AuthManager
+import org.koin.android.ext.android.inject
 import retrofit2.HttpException
 
 open class BaseActivity : ComponentActivity() {
+
+    private val authManager: AuthManager by inject()
 
     @Composable
     fun <T : Any> RegisterVMCommonState(navController: NavController, viewModel: BaseViewModel<T>) {
@@ -17,16 +21,23 @@ open class BaseActivity : ComponentActivity() {
         commonState.value.error?.handle {
             navController.navigate(
                 NavigationItem.ErrorDialog.createRoute(
-                    when (it.exception) {
+                    when (it) {
                         is HttpException -> {
-                            when (it.exception.code()) {
-                                ErrorType.AuthenticationError.code -> resources.getString(R.string.login_error_message)
+                            when {
+                                it.code() == ErrorType.AuthenticationError.code
+                                        && authManager.isUserAuthorize() -> {
+                                    resources.getString(R.string.auth_error_message)
+                                }
+
+                                it.code() == ErrorType.AuthenticationError.code -> {
+                                    resources.getString(R.string.login_error_message)
+                                }
+
                                 else -> resources.getString(R.string.common_error_message)
                             }
                         }
 
-                        else -> it.exception.message
-                            ?: resources.getString(R.string.common_error_message)
+                        else -> it.message ?: resources.getString(R.string.common_error_message)
                     }
 
                 )

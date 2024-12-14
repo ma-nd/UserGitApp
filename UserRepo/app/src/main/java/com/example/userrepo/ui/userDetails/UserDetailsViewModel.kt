@@ -6,11 +6,11 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import com.example.userrepo.base.data.Response
 import com.example.userrepo.base.navigation.ArgParams
 import com.example.userrepo.base.ui.BaseViewModel
 import com.example.userrepo.data.GithubRepository
 import com.example.userrepo.data.UserRepoPagingSource
+import com.example.userrepo.data.models.UserActivityModel
 import com.example.userrepo.data.models.UserDetailsModel
 import com.example.userrepo.data.models.UserRepoModel
 import kotlinx.coroutines.flow.Flow
@@ -26,24 +26,38 @@ class UserDetailsViewModel(
     private val pageSize = 15
 
     init {
-        getUserDetails()
+        getUserData()
     }
 
-    private fun getUserDetails() {
+    private fun getUserData() {
         if (userName.isNullOrBlank()) {
-            onError(Response.Error(Error()))
+            onError(Error())
             return
         }
+        getUserDetails(userName)
+        getUserActivities(userName)
+    }
 
+    private fun getUserDetails(userName: String) {
         viewModelScope.launch {
             githubRepository.getUserDetails(userName)
-                .apply {
-                    onSuccess {
-                        _uiState.value = _uiState.value.copy(userDetails = it as UserDetailsModel)
-                    }
-                    onError {
-                        onError(it)
-                    }
+                .onSuccess {
+                    _uiState.value = _uiState.value.copy(userDetails = it)
+                }
+                .onFailure {
+                    onError(it)
+                }
+        }
+    }
+
+    private fun getUserActivities(userName: String) {
+        viewModelScope.launch {
+            githubRepository.getUserActivities(userName)
+                .onSuccess {
+                    _uiState.value = _uiState.value.copy(userActivities = it)
+                }
+                .onFailure {
+                    onError(it)
                 }
         }
     }
@@ -64,10 +78,13 @@ class UserDetailsViewModel(
     ).flow
 
     override fun onListError(error: Throwable) {
-        onError(Response.Error(error))
+        onError(error)
     }
 
-    data class State(val userDetails: UserDetailsModel? = null)
+    data class State(
+        val userDetails: UserDetailsModel? = null,
+        val userActivities: List<UserActivityModel> = listOf()
+    )
 }
 
 interface UserDetailsViewModelActionHandler {
